@@ -10,6 +10,8 @@ class Node(object):
         self.fspath = fspath
         self.dirs = self.resolve_paths(dirs)
         self.files = self.resolve_paths(files)
+        self.children = []
+        self.parent = None
 
         for file in self.files:
             setattr(self, file, Node._read_file(self.files[file]))
@@ -27,7 +29,7 @@ class Node(object):
     def _read_file(file_path):
         try:
             with open(file_path, 'r') as file:
-                content = file.readlines()
+                content = Node._clean_values(file.read())
         except Exception as e:
             content = str(e)
         return content
@@ -45,6 +47,7 @@ class Set(object):
     def __init__(self):
         self.nodes = []
         self._get_nodes()
+        self._link_nodes()
 
     @staticmethod
     def _get_dirs():
@@ -74,12 +77,12 @@ class Set(object):
                 elif dirname in ('firmware_node', 'driver'):
                     self.nodes.append(Node(dirname, dirpath, dirnames, filenames))
 
-    # @staticmethod
-    # def resolve_path(path):
-    #     resolved = {}
-    #     for base in base_names:
-    #         resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
-    #     return resolved
+    def _link_nodes(self):
+        for node_a in self.nodes:
+            for node_b in self.nodes:
+                if node_a.fspath != node_b.fspath and node_b.fspath.startswith(node_a.fspath):
+                    node_a.children.append(node_b)
+                    node_b.parent = node_a
 
     def count(self):
         return len(self.nodes)
@@ -99,6 +102,4 @@ s = Set()
 
 print(str(s.count()))
 
-for dev in s.nodes:
-    if hasattr(dev, 'path'):
-        print(dev.fspath, dev.path)
+
