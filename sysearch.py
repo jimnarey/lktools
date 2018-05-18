@@ -3,25 +3,16 @@
 import os
 
 
-def get_device_roots(start_path):
-    device_roots = []
-    for (dirpath, dirnames, filenames) in os.walk(start_path):
-        for filename in filenames:
-            if filename == 'path':
-                device_roots.append([dirpath, dirnames, filenames])
-    return device_roots
+class Node(object):
 
-
-class Device(object):
-
-    def __init__(self, fspath, dirs, files):
+    def __init__(self, ntype, fspath, dirs, files):
+        self.type = ntype
         self.fspath = fspath
         self.dirs = self.resolve_paths(dirs)
         self.files = self.resolve_paths(files)
 
         for file in self.files:
-            if file in ('hid', 'path', 'modalias'):
-                setattr(self, file, Device._read_file(self.files[file]))
+            setattr(self, file, Node._read_file(self.files[file]))
 
     def resolve_paths(self, base_names):
         resolved = {}
@@ -29,35 +20,73 @@ class Device(object):
             resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
         return resolved
 
+    def get(self, name):
+        return getattr(self, name, None)
+
     @staticmethod
     def _read_file(file_path):
-        with open(file_path, 'r') as file:
-            return file.readlines()
+        try:
+            with open(file_path, 'r') as file:
+                content = file.readlines()
+        except Exception as e:
+            content = str(e)
+        return content
+
+    @staticmethod
+    def _clean_values(value):
+        # Sort out paths
+        return value.replace('\n', '')
 
 
 class Set(object):
+
     root = '/sys/'
 
-    @classmethod
-    def get_device_roots(cls):
-        device_roots = []
-        for (dirpath, dirnames, filenames) in os.walk(Set.root):
+    def __init__(self):
+        self.nodes = []
+        self._get_nodes()
+
+    @staticmethod
+    def _get_dirs():
+        dirs = set()
+        roots = []
+        for dirpath, dirnames, filenames in os.walk(Set.root, followlinks=True):
+            st = os.stat(dirpath)
+            scandirs = []
+            for dirname in dirnames:
+                st = os.stat(os.path.join(dirpath, dirname))
+                dirkey = st.st_dev, st.st_ino
+                if dirkey not in dirs:
+                    dirs.add(dirkey)
+                    scandirs.append(dirname)
+            dirnames[:] = scandirs
+            roots.append([dirpath, dirnames, filenames])
+        return roots
+
+    def _get_nodes(self):
+        for (dirpath, dirnames, filenames) in Set._get_dirs():
             for filename in filenames:
                 if filename == 'path':
-                    device_roots.append([dirpath, dirnames, filenames])
-        return device_roots
+                    self.nodes.append(Node('device', dirpath, dirnames, filenames))
+            for dirname in dirnames:
+                if 'physical_node' in dirname:
+                    self.nodes.append(Node(dirname, dirpath, dirnames, filenames))
+                elif dirname in ('firmware_node', 'driver'):
+                    self.nodes.append(Node(dirname, dirpath, dirnames, filenames))
 
-    def __init__(self):
-        self.devs = []
-        for dev in Set.get_device_roots():
-            self.devs.append(Device(dev[0], dev[1], dev[2]))
+    # @staticmethod
+    # def resolve_path(path):
+    #     resolved = {}
+    #     for base in base_names:
+    #         resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
+    #     return resolved
 
     def count(self):
-        return len(self.devs)
+        return len(self.nodes)
 
     def search(self, prop, value):
         results = []
-        for dev in self.devs:
+        for dev in self.nodes:
             if dev.files[prop]:
                 if dev.files[prop] == value:
                     results.append(dev)
@@ -70,6 +99,6 @@ s = Set()
 
 print(str(s.count()))
 
-for dev in s.devs:
-    if dev.path:
+for dev in s.nodes:
+    if hasattr(dev, 'path'):
         print(dev.fspath, dev.path)
