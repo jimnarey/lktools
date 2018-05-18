@@ -8,22 +8,14 @@ class Node(object):
     def __init__(self, ntype, fspath, dirs, files):
         self.type = ntype
         self.fspath = fspath
-        self.dirs = self.resolve_paths(dirs)
-        self.files = self.resolve_paths(files)
+        # Check symbolic links are added to self.dirs and not to self.files
+        self.dirs = self._resolve_paths(dirs)
+        self.files = self._resolve_paths(files)
         self.children = []
-        self.parent = None
+        self.parent = 'no_parent'
 
         for file in self.files:
             setattr(self, file, Node._read_file(self.files[file]))
-
-    def resolve_paths(self, base_names):
-        resolved = {}
-        for base in base_names:
-            resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
-        return resolved
-
-    def get(self, name):
-        return getattr(self, name, None)
 
     @staticmethod
     def _read_file(file_path):
@@ -38,6 +30,21 @@ class Node(object):
     def _clean_values(value):
         # Sort out paths
         return value.replace('\n', '')
+
+    def _resolve_paths(self, base_names):
+        resolved = {}
+        for base in base_names:
+            resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
+        return resolved
+
+    def get(self, name):
+        return getattr(self, name, None)
+
+    def all_children(self):
+        children = list(self.children)
+        for node in self.children:
+            children += list(node.children)
+        return children
 
 
 class Set(object):
@@ -63,7 +70,8 @@ class Set(object):
                     dirs.add(dirkey)
                     scandirs.append(dirname)
             dirnames[:] = scandirs
-            roots.append([dirpath, dirnames, filenames])
+            # Try doing a realpath here
+            roots.append([os.path.realpath(dirpath), dirnames, filenames])
         return roots
 
     def _get_nodes(self):
@@ -77,10 +85,18 @@ class Set(object):
                 elif dirname in ('firmware_node', 'driver'):
                     self.nodes.append(Node(dirname, dirpath, dirnames, filenames))
 
+    # def _link_nodes(self):
+    #     for node_a in self.nodes:
+    #         for node_b in self.nodes:
+    #             # Refactor
+    #             if node_a.fspath != node_b.fspath and node_b.fspath.startswith(node_a.fspath):
+    #                 node_a.children.append(node_b)
+    #                 node_b.parent = node_a
+
     def _link_nodes(self):
         for node_a in self.nodes:
             for node_b in self.nodes:
-                if node_a.fspath != node_b.fspath and node_b.fspath.startswith(node_a.fspath):
+                if node_b.fspath in node_a.dirs.values():
                     node_a.children.append(node_b)
                     node_b.parent = node_a
 
@@ -89,11 +105,24 @@ class Set(object):
 
     def search(self, prop, value):
         results = []
-        for dev in self.nodes:
-            if dev.files[prop]:
-                if dev.files[prop] == value:
-                    results.append(dev)
+        for node in self.nodes:
+            if node.files[prop]:
+                if node.files[prop] == value:
+                    results.append(node)
         return results
+
+    def by_type(self, ntype):
+        return [node for node in self.nodes if node.type == ntype]
+
+    def unique_devs(self):
+        devices = self.by_type('device')
+        unique_devs = []
+        paths = []
+        for dev in devices:
+            if dev.path not in paths:
+                unique_devs.append(dev)
+                paths.append(dev.path)
+        return unique_devs
 
 
 s = Set()
