@@ -1,5 +1,4 @@
-from flask import Flask
-from flask import render_template
+from flask import Flask, render_template, request
 from sysearch import node_set
 app = Flask(__name__)
 
@@ -7,7 +6,8 @@ app = Flask(__name__)
 @app.route('/')
 def list_devices():
     devices = node_set.by_type('device')
-    print(devices)
+    if request.args.get('haschildren') == 'true':
+        devices = [device for device in devices if device.children]
     return render_template('devices.html', devices=devices)
 
 
