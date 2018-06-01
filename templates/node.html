@@ -1,0 +1,30 @@
+<!doctype html>
+<title>Device List</title>
+
+<h3>Nodes</h3>
+<table>
+{% for child in node.children %}
+    <tr>
+        <td><a href="/device/{{child.id}}">{{child.base_path}}</a></td>
+        <td>{{child.type}}</td>
+    </tr>
+{% endfor %}
+</table>
+
+<h3>Dirs</h3>
+<table>
+{% for dir in node.dirs.keys() %}
+    <tr>
+        <td>{{dir}}</td>
+    </tr>
+{% endfor %}
+</table>
+
+<h3>Files</h3>
+<table>
+{% for file in node.files.keys() %}
+    <tr>
+        <td>{{file}}</td>
+    </tr>
+{% endfor %}
+</table>

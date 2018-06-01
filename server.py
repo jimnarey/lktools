@@ -11,11 +11,11 @@ def list_devices():
     return render_template('devices.html', devices=devices)
 
 
-@app.route('/device/<dev_id>')
-def device(dev_id=None):
-    if dev_id:
-        device = node_set.get_by_id(dev_id)
-        return render_template('device.html', device=device)
+@app.route('/device/<node_id>')
+def node(node_id=None):
+    if node_id:
+        node = node_set.get_by_id(node_id)
+        return render_template('node.html', node=node)
     return 'No query string'
 
 

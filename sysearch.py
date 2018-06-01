@@ -9,6 +9,7 @@ class Node(object):
         self.id = id
         self.type = ntype
         self.fspath = fspath
+        self.base_path = os.path.basename(self.fspath)
         # Check symbolic links are added to self.dirs and not to self.files
         self.dirs = self._resolve_paths(dirs)
         self.files = self._resolve_paths(files)
