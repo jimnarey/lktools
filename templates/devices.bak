@@ -1,0 +1,22 @@
+<!doctype html>
+<title>Device List</title>
+
+<h3>Devices</h3>
+<p><a href="/?haschildren=false">All</a></p>
+<p><a href="/?haschildren=true">Has Children Only</a></p>
+<table>
+{% for device in devices %}
+    <tr>
+        <td><a href="/device/{{ device.id }}">{{device.path}}</a></td>
+        <td>{{device.files.get('hid')}}</td>
+        <td>{{device.files.get('modalias')}}</td>
+    </tr>
+{% endfor %}
+</table>
+
+
+<ul>
+{% for device in devices %}
+    <li><a href="/device/{{ device.id }}">{{ device.path }}</a></li>
+{% endfor %}
+</ul>

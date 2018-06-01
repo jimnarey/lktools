@@ -13,11 +13,15 @@ class Node(object):
         # Check symbolic links are added to self.dirs and not to self.files
         self.dirs = self._resolve_paths(dirs)
         self.files = self._resolve_paths(files)
+        self.file_contents = {}
         self.children = []
         self.parent = 'no_parent'
 
         for file in self.files:
             setattr(self, file, Node._read_file(self.files[file]))
+
+        for file in self.files:
+            self.file_contents[file] = Node._read_file(self.files[file])
 
     @staticmethod
     def _read_file(file_path):
@@ -120,12 +124,11 @@ class Set(object):
             print(node.fspath)
         return node
 
-
-    def search(self, prop, value):
+    def search_by_file_contents(self, file, value):
         results = []
         for node in self.nodes:
-            if node.files[prop]:
-                if node.files[prop] == value:
+            if node.file_contents.get(file, None):
+                if node.file_contents[file] == value:
                     results.append(node)
         return results
 

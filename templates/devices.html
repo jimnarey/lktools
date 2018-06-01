@@ -1,8 +1,13 @@
 <!doctype html>
 <title>Device List</title>
 
-<ul>
+<h3>Devices</h3>
+<table>
 {% for device in devices %}
-    <li><a href="/device/{{ device.id }}">{{ device.path }}</a></li>
+    <tr>
+        <td><a href="/device/{{device.id}}">{{device.path}}</a></td>
+        <td>{{device.file_contents.get('hid', '')}}</td>
+        <td>{{device.file_contents.get('modalias', '')}}</td>
+    </tr>
 {% endfor %}
-</ul>
+</table>
