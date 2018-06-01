@@ -3,14 +3,14 @@
 
 <p>****Dirs****</p>
 <ul>
-{% for dir in device.dirs %}
+{% for dir in device.dirs.keys() %}
     <li>{{ dir }}</li>
 {% endfor %}
 </ul>
 
 <p>****Files****</p>
 <ul>
-{% for file in device.files %}
+{% for file in device.files.keys() %}
     <li>{{ file }}</li>
 {% endfor %}
 </ul>

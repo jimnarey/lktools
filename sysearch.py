@@ -112,7 +112,13 @@ class Set(object):
         return len(self.nodes)
 
     def get_by_id(self, id):
-        next((node for node in self.nodes if node.id == id), None)
+        print(type(id))
+        node = [node for node in self.nodes if node.id == int(id)]
+        node = node[0] if node else None
+        if node:
+            print(node.fspath)
+        return node
+
 
     def search(self, prop, value):
         results = []
