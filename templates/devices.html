@@ -1,0 +1,8 @@
+<!doctype html>
+<title>Device List</title>
+
+<ul>
+{% for device in devices %}
+    <li><a href="/device/{{ device.id }}">{{ device.path }}</a></li>
+{% endfor %}
+</ul>

@@ -5,7 +5,8 @@ import os
 
 class Node(object):
 
-    def __init__(self, ntype, fspath, dirs, files):
+    def __init__(self, id, ntype, fspath, dirs, files):
+        self.id = id
         self.type = ntype
         self.fspath = fspath
         # Check symbolic links are added to self.dirs and not to self.files
@@ -50,6 +51,13 @@ class Node(object):
 class Set(object):
 
     root = '/sys/'
+    next_id = 0
+
+    @classmethod
+    def get_id(cls):
+        id = cls.next_id
+        cls.next_id += 1
+        return id
 
     def __init__(self):
         self.nodes = []
@@ -78,12 +86,12 @@ class Set(object):
         for (dirpath, dirnames, filenames) in Set._get_dirs():
             for filename in filenames:
                 if filename == 'path':
-                    self.nodes.append(Node('device', dirpath, dirnames, filenames))
+                    self.nodes.append(Node(Set.get_id(), 'device', dirpath, dirnames, filenames))
             for dirname in dirnames:
                 if 'physical_node' in dirname:
-                    self.nodes.append(Node(dirname, dirpath, dirnames, filenames))
+                    self.nodes.append(Node(Set.get_id(), dirname, dirpath, dirnames, filenames))
                 elif dirname in ('firmware_node', 'driver'):
-                    self.nodes.append(Node(dirname, dirpath, dirnames, filenames))
+                    self.nodes.append(Node(Set.get_id(), dirname, dirpath, dirnames, filenames))
 
     # def _link_nodes(self):
     #     for node_a in self.nodes:
@@ -102,6 +110,9 @@ class Set(object):
 
     def count(self):
         return len(self.nodes)
+
+    def get_by_id(self, id):
+        next((node for node in self.nodes if node.id == id), None)
 
     def search(self, prop, value):
         results = []
@@ -125,10 +136,14 @@ class Set(object):
         return unique_devs
 
 
-s = Set()
+
+node_set = Set()
+
+for node in node_set.nodes:
+    print(node.id)
 
 # contents = read_files(file_paths)
 
-print(str(s.count()))
+# print(str(s.count()))
 
 

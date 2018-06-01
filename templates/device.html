@@ -1,0 +1,16 @@
+<!doctype html>
+<title>Device List</title>
+
+<p>****Dirs****</p>
+<ul>
+{% for dir in device.dirs %}
+    <li>{{ dir }}</li>
+{% endfor %}
+</ul>
+
+<p>****Files****</p>
+<ul>
+{% for file in device.files %}
+    <li>{{ file }}</li>
+{% endfor %}
+</ul>
