@@ -16,7 +16,7 @@ class Node(object):
         self.links = self._resolve_paths(links)
         self.file_contents = {}
         self.children = []
-        self.parent = 'no_parent'
+        self.parent = None
 
         # for file in self.files:
         #     setattr(self, file, Node._read_file(self.files[file]))

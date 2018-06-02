@@ -4,11 +4,25 @@ app = Flask(__name__)
 
 
 @app.route('/')
-def list_devices():
-    devices = node_set.by_type('device')
+def index():
+    return render_template('base.html')
+
+
+@app.route('/list/')
+def list_nodes():
+    node_type = request.args.get('node_type', None)
+    if node_type and node_type != 'all':
+        nodes = node_set.by_type(node_type)
+    else:
+        # This probably isn't necessary
+        nodes = list(node_set.nodes)
     if request.args.get('haschildren') == 'true':
-        devices = [device for device in devices if device.children]
-    return render_template('devices.html', devices=devices)
+        nodes = [node for node in nodes if node.children]
+    if request.args.get('hasparent') == 'true':
+        nodes = [node for node in nodes if node.parent]
+    elif request.args.get('hasparent') == 'false':
+        nodes = [node for node in nodes if node.parent is None]
+    return render_template('nodelist.html', nodes=nodes)
 
 
 @app.route('/device/<node_id>')

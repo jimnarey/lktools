@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block head %}
+<title xmlns="http://www.w3.org/1999/html">Node List</title>
+{% endblock %}
+
+{% block content %}
+    <p><a href="/list/">Clear</a></p>
+    <form action="/list/" method="get">
+        <select name="node_type">
+            <option value="all">All</option>
+            <option value="device">Devices</option>
+            <option value="physical_node">Physical Nodes</option>
+            <option value="driver">Drivers</option>
+            <option value="firmware_node">Firmware Nodes</option>
+        </select>
+        <input type="checkbox" name="haschildren" value="true">Only nodes with children<br>
+        <select name="hasparent">
+            <option value="all">All</option>
+            <option value="true">True</option>
+            <option value="false">False</option>
+        </select>
+        <input type="submit" value="Submit">
+    </form>
+
+    <h3>Nodes</h3>
+    <p>Count: {{ nodes.__len__() }}</p>
+    <table>
+    {% for node in nodes %}
+        <tr>
+            <td><a href="/device/{{node.id}}">{{node.file_contents.get('path')}}</a></td>
+            <td>{{node.file_contents.get('hid', '')}}</td>
+            <td>{{node.file_contents.get('modalias', '')}}</td>
+        </tr>
+    {% endfor %}
+    </table>
+{% endblock %}
