@@ -12,7 +12,7 @@ def index():
 def list_nodes():
     node_type = request.args.get('node_type', None)
     if node_type and node_type != 'all':
-        nodes = node_set.by_type(node_type)
+        nodes = node_set.type_contains(node_type)
     else:
         # This probably isn't necessary
         nodes = list(node_set.nodes)

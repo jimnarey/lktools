@@ -10,16 +10,12 @@ class Node(object):
         self.type = ntype
         self.fspath = fspath
         self.base_path = os.path.basename(self.fspath)
-        # Check symbolic links are added to self.dirs and not to self.files
         self.dirs = self._resolve_paths(dirs)
         self.files = self._resolve_paths(files)
         self.links = self._resolve_paths(links)
         self.file_contents = {}
         self.children = []
         self.parent = None
-
-        # for file in self.files:
-        #     setattr(self, file, Node._read_file(self.files[file]))
 
         for file in self.files:
             self.file_contents[file] = Node._read_file(self.files[file])
@@ -68,25 +64,6 @@ class Set(object):
     def __init__(self):
         self.nodes = []
         self._get_nodes()
-        # self._link_nodes()
-
-    # @staticmethod
-    # def _get_dirs():
-    #     dirs = set()
-    #     roots = []
-    #     for dirpath, dirnames, filenames in os.walk(Set.root, followlinks=True):
-    #         st = os.stat(dirpath)
-    #         scandirs = []
-    #         for dirname in dirnames:
-    #             st = os.stat(os.path.join(dirpath, dirname))
-    #             dirkey = st.st_dev, st.st_ino
-    #             if dirkey not in dirs:
-    #                 dirs.add(dirkey)
-    #                 scandirs.append(dirname)
-    #         dirnames[:] = scandirs
-    #         # Try doing a realpath here
-    #         roots.append([os.path.realpath(dirpath), dirnames, filenames])
-    #     return roots
 
     @staticmethod
     def _get_roots(path):
@@ -95,7 +72,6 @@ class Set(object):
             ldir = [dir] + list(Set._get_dir_contents(dir))
             roots.append(ldir)
         return roots
-
 
     @staticmethod
     def _get_dirs(path):
@@ -150,33 +126,18 @@ class Set(object):
                 realpath = os.path.realpath(os.path.join(dirpath, linkname))
                 if realpath not in [node.fspath for node in self.nodes]:
                     subdirs, subfiles, sublinks = self._get_dir_contents(realpath)
-                    if 'physical_node' in linkname:
-                        self.nodes.append(Node(Set.get_id(), 'physical_node', realpath, subdirs, subfiles, sublinks))
+                    if 'physical' in linkname or 'firmware' in linkname:
+                        self.nodes.append(Node(Set.get_id(), linkname[:8], realpath, subdirs, subfiles, sublinks))
                         if parent_node:
                             parent_node.children.append(self.nodes[-1])
                             self.nodes[-1].parent = parent_node if parent_node else None
                         self._traverse_links(self.nodes[-1].fspath, self.nodes[-1], self.nodes[-1].links.keys())
-                    elif linkname in ('firmware_node', 'driver'):
+                    elif linkname in ('driver',):
                         self.nodes.append(Node(Set.get_id(), linkname, realpath, subdirs, subfiles, sublinks))
                         if parent_node:
                             parent_node.children.append(self.nodes[-1])
                             self.nodes[-1].parent = parent_node if parent_node else None
                         self._traverse_links(self.nodes[-1].fspath, self.nodes[-1], self.nodes[-1].links.keys())
-
-    # def _link_nodes(self):
-    #     for node_a in self.nodes:
-    #         for node_b in self.nodes:
-    #             # Refactor
-    #             if node_a.fspath != node_b.fspath and node_b.fspath.startswith(node_a.fspath):
-    #                 node_a.children.append(node_b)
-    #                 node_b.parent = node_a
-
-    # def _link_nodes(self):
-    #     for node_a in self.nodes:
-    #         for node_b in self.nodes:
-    #             if node_b.fspath in node_a.dirs.values():
-    #                 node_a.children.append(node_b)
-    #                 node_b.parent = node_a
 
     def count(self):
         return len(self.nodes)
@@ -203,6 +164,9 @@ class Set(object):
     def by_type(self, ntype):
         return [node for node in self.nodes if node.type == ntype]
 
+    def type_contains(self, substring):
+        return [node for node in self.nodes if substring in node.type]
+
     def unique_devs(self):
         devices = self.by_type('device')
         unique_devs = []
@@ -214,14 +178,10 @@ class Set(object):
         return unique_devs
 
 
-
 node_set = Set()
 
 for node in node_set.nodes:
     print(node.id)
 
-# contents = read_files(file_paths)
-
-# print(str(s.count()))
 
 
