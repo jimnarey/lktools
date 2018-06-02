@@ -1,30 +1,39 @@
 <!doctype html>
 <title>Device List</title>
 
-<h3>Nodes</h3>
-<table>
-{% for child in node.children %}
-    <tr>
-        <td><a href="/device/{{child.id}}">{{child.base_path}}</a></td>
-        <td>{{child.type}}</td>
-    </tr>
-{% endfor %}
-</table>
+{% if node.children %}
+    <h3>Child Nodes</h3>
+    <table>
+        {% for child in node.children %}
+            <tr>
+                <td><a href="/device/{{child.id}}">{{child.base_path}}</a></td>
+                <td>{{child.type}}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
 
+
+{% if node.dirs %}
 <h3>Dirs</h3>
-<table>
-{% for dir in node.dirs.keys() %}
-    <tr>
-        <td>{{dir}}</td>
-    </tr>
-{% endfor %}
-</table>
+    <table>
+        {% for dir in node.dirs %}
+            <tr>
+                <td>{{dir}}</td>
+                <td>{{node.dirs[dir]}}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
 
-<h3>Files</h3>
-<table>
-{% for file in node.files.keys() %}
-    <tr>
-        <td>{{file}}</td>
-    </tr>
-{% endfor %}
-</table>
+{% if node.files %}
+    <h3>Files</h3>
+    <table>
+        {% for file in node.files %}
+            <tr>
+                <td>{{file}}</td>
+                <td>{{node.files[file]}}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
