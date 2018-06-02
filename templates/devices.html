@@ -8,7 +8,7 @@
 <table>
 {% for device in devices %}
     <tr>
-        <td><a href="/device/{{device.id}}">{{device.path}}</a></td>
+        <td><a href="/device/{{device.id}}">{{device.file_contents.get('path')}}</a></td>
         <td>{{device.file_contents.get('hid', '')}}</td>
         <td>{{device.file_contents.get('modalias', '')}}</td>
     </tr>
