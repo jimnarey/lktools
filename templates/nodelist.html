@@ -23,13 +23,13 @@
     </form>
 
     <h3>Nodes</h3>
-    <p>Count: {{ nodes.__len__() }}</p>
+    <p>Count: {{ node_rows.__len__() }}</p>
     <table>
-    {% for node in nodes %}
+    {% for row in node_rows %}
         <tr>
-            <td><a href="/device/{{node.id}}">{{node.file_contents.get('path')}}</a></td>
-            <td>{{node.file_contents.get('hid', '')}}</td>
-            <td>{{node.file_contents.get('modalias', '')}}</td>
+            {% for col in row %}
+                <td><a href="/node/{{row[0]}}">{{col}}</a></td>
+            {% endfor %}
         </tr>
     {% endfor %}
     </table>

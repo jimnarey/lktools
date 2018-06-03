@@ -22,10 +22,21 @@ def list_nodes():
         nodes = [node for node in nodes if node.parent]
     elif request.args.get('hasparent') == 'false':
         nodes = [node for node in nodes if node.parent is None]
-    return render_template('nodelist.html', nodes=nodes)
+
+    node_rows = []
+    for node in nodes:
+        node_rows.append([node.id,
+                          node.base_path,
+                          node.type,
+                          node.file_contents.get('path'),
+                          node.file_contents.get('hid'),
+                          node.file_contents.get('modalias'),
+                          node.fspath])
+
+    return render_template('nodelist.html', node_rows=node_rows)
 
 
-@app.route('/device/<node_id>')
+@app.route('/node/<node_id>')
 def node(node_id=None):
     if node_id:
         node = node_set.get_by_id(node_id)
