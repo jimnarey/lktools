@@ -6,6 +6,7 @@ import os
 class Node(object):
 
     def __init__(self, id, fspath, dirs, files, links, ntype=None, parent=None):
+        # print('Node init: ' + ' ' + fspath + ' : ' + str(id))
         self.id = id
         self.type = ntype
         self.fspath = fspath
@@ -43,8 +44,8 @@ class Node(object):
             resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
         return resolved
 
-    def get(self, name):
-        return getattr(self, name, None)
+    # def get(self, name):
+    #     return getattr(self, name, None)
 
     def all_children(self):
         children = list(self.children)
@@ -63,27 +64,33 @@ class NodeSet(object):
         cls.next_id += 1
         return id
 
-    def __init__(self, root):
+    def __init__(self, root, exclude_dirs):
         self.root = root
+        self.exclude_dirs = exclude_dirs
         # self.dir_paths = NodeSet._get_all_dirs(NodeSet.root)
         self.nodes = []
 
         self._get_dir_nodes(self.root)
 
     # Get all dirs/subdir paths within a given path
-    
+
+    # Create some root nodes (make the add_node method again) based on a check (e.g. for a path file, multiple)
+    # Pass this all the root paths/nodes in turn
     def _get_dir_nodes(self, path, parent=None):
         try:
             for item in os.scandir(path):
-                realpath = os.path.realpath(item.path)
-                # if realpath not in [node.fspath for node in self.nodes]:
                 if item.is_dir(follow_symlinks=False):
-                    dirnames, filenames, linknames = NodeSet._get_dir_contents(realpath)
-                    new_node = Node(NodeSet.get_id(), realpath,
-                                           dirnames, filenames, linknames, parent=parent)
-                    if parent:
-                        parent.children.append(new_node)
-                    self._get_dir_nodes(realpath, parent=new_node)
+
+                    realpath = os.path.realpath(item.path)
+                    # print(realpath)
+                    if realpath not in [node.fspath for node in self.nodes] and realpath not in self.exclude_dirs:
+                        dirnames, filenames, linknames = NodeSet._get_dir_contents(realpath)
+                        new_node = Node(NodeSet.get_id(), realpath,
+                                               dirnames, filenames, linknames, parent=parent)
+                        if parent:
+                            parent.children.append(new_node)
+                        self.nodes.append(new_node)
+                        self._get_dir_nodes(realpath, parent=new_node)
         except PermissionError as e:
             print(str(e))
 
@@ -103,6 +110,7 @@ class NodeSet(object):
                                         dirnames, filenames, linknames, parent=node)
                         node.children.append(new_node)
                         new_node.parents.append(node)
+                        self.nodes.append(new_node)
 
     #
     # @staticmethod
@@ -217,7 +225,9 @@ class NodeSet(object):
         return unique_devs
 
 
-node_set = NodeSet('/sys/')
+exclude_dirs = ('/sys/kernel/security',)
+
+node_set = NodeSet('/sys/', exclude_dirs)
 
 for node in node_set.nodes:
     print(node.id)
