@@ -5,12 +5,12 @@ import os
 
 class Node(object):
 
-    def __init__(self, id, fspath, ntype=None, parent=None):
+    def __init__(self, id, fspath, parent=None):
         self.id = id
-        self.type = ntype
+        self.type = ''
         self.fspath = fspath
 
-        self.base_path = os.path.basename(self.fspath)
+        self.base_name = os.path.basename(self.fspath)
         # self._dirs = []
         # self._files = []
         # self._links = []
@@ -24,8 +24,8 @@ class Node(object):
         if parent:
             self.parents.append(parent)
 
-        for file in self.files:
-            self.file_contents[file] = Node._read_file(self.files[file])
+        # for file in self.files:
+        #     self.file_contents[file] = Node._read_file(self.files[file])
 
     @staticmethod
     def _read_file(file_path):
@@ -46,6 +46,7 @@ class Node(object):
 
     def add_file(self, name):
         self.files[name] = os.path.realpath(os.path.join(self.fspath, name))
+        self.file_contents[name] = Node._read_file(self.files[name])
 
     def add_link(self, name):
         self.links[name] = os.path.realpath(os.path.join(self.fspath, name))
@@ -73,6 +74,7 @@ class NodeSet(object):
         self.nodes = []
         self._get_dir_nodes(self.root)
         self._get_link_nodes()
+        self._classify_nodes()
 
     def _get_dir_nodes(self, path, parent=None):
         realpath = os.path.realpath(path)
@@ -115,21 +117,16 @@ class NodeSet(object):
                     else:
                         self._get_dir_nodes(realpath, parent=node)
 
-    # def _get_link_nodes(self):
-    #     for node in self.nodes:
-    #         for linkname in node.links:
-    #             realpath = os.path.realpath(os.path.join(node.fspath, linkname))
-    #             if os.path.isdir(realpath):
-    #                 existing_node = next((node for node in self.nodes if node.fspath == realpath), None)
-    #                 if existing_node:
-    #                     node.children.append(existing_node)
-    #                     existing_node.parents.append(node)
-    #                 else:
-    #                     dirs, files, links = NodeSet._get_dir_contents(realpath)
-    #                     new_node = Node(NodeSet.get_id(), realpath, dirs, files, links, parent=node)
-    #                     node.children.append(new_node)
-    #                     new_node.parents.append(node)
-    #                     self.nodes.append(new_node)
+    def _classify_nodes(self):
+        for node in self.nodes:
+            if 'path' in node.files:
+                node.type = 'device'
+                continue
+            parent_names = (parent.base_name for parent in node.parents)
+            if 'physical_node' in parent_names:
+                node.type = 'physical_node'
+            elif 'driver' in parent_names:
+                node.type = 'driver'
 
     def count(self):
         return len(self.nodes)

@@ -1,11 +1,16 @@
 from flask import Flask, render_template, request
 from sysearch import node_set
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 
 
 @app.route('/')
 def index():
     return render_template('base.html')
+
+
+@app.route('/static/style.css')
+def root():
+    return app.send_static_file('style.css')
 
 
 @app.route('/list/')
@@ -26,7 +31,7 @@ def list_nodes():
     node_rows = []
     for node in nodes:
         node_rows.append([node.id,
-                          node.base_path,
+                          node.base_name,
                           node.type,
                           node.file_contents.get('path'),
                           node.file_contents.get('hid'),
@@ -42,6 +47,7 @@ def node(node_id=None):
         node = node_set.get_by_id(node_id)
         return render_template('node.html', node=node)
     return 'No query string'
+
 
 
 if __name__ == '__main__':

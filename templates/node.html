@@ -9,7 +9,7 @@
         <table>
             {% for child in node.children %}
                 <tr>
-                    <td><a href="/device/{{child.id}}">{{child.base_path}}</a></td>
+                    <td><a href="/node/{{child.id}}">{{child.base_name}}</a></td>
                     <td>{{child.type}}</td>
                 </tr>
             {% endfor %}
