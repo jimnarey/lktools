@@ -2,12 +2,6 @@
 
 import os
 
-# def fs_error_handler(func):
-#
-#     try:
-#         output = func()
-#     except (PermissionError, FileNotFoundError) as e:
-#         print(str(e))
 
 class Node(object):
 
@@ -60,9 +54,6 @@ class Node(object):
             resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
         return resolved
 
-    # def get(self, name):
-    #     return getattr(self, name, None)
-
     def all_children(self):
         children = list(self.children)
         for node in self.children:
@@ -82,53 +73,10 @@ class NodeSet(object):
 
     def __init__(self, root, exclude_dirs):
         self.root = root
-        self.subdirs = self.get_all_subdirs(self.root)
         self.exclude_dirs = exclude_dirs
         self.nodes = []
-
         self._get_dir_nodes(self.root)
 
-    # Get all dirs/subdir paths within a given path
-
-    @staticmethod
-    def get_all_subdirs(root):
-        return [entry[0] for entry in os.walk(root, followlinks=False)]
-
-    # @staticmethod
-    # def _get_dir_contents(path):
-    #     dirs = []
-    #     files = []
-    #     links = []
-    #     items = tuple(os.scandir(path))
-    #     dirs = [item for item in items if item.is_dir(follow_symlinks=False)]
-    #     files = [item for item in items if item.is_file(follow_symlinks=False)]
-    #     links = [item for item in items if item.is_symlink()]
-    #     try:
-    #         for item in os.scandir(path):
-    #             if item.is_dir(follow_symlinks=False):
-    #                 dirs.append(item.name)
-    #             if item.is_file(follow_symlinks=False):
-    #                 files.append(item.name)
-    #             if item.is_symlink():
-    #                 links.append(item.name)
-    #     except (PermissionError, FileNotFoundError) as e:
-    #         print(str(e))
-    #     return dirs, files, links
-
-    def filter_sub_dirs(self, d):
-        pass
-
-    # @staticmethod
-    # def filter_dir_items(items, method_name):
-    #     subset = []
-    #     for item in items:
-    #         try:
-    #             if getattr(item, method_name)(follow_symlinks=False):
-    #                 subset.append(item.name)
-
-
-    # Create some root nodes (make the add_node method again) based on a check (e.g. for a path file, multiple)
-    # Pass this all the root paths/nodes in turn
     def _get_dir_nodes(self, path, parent=None):
         realpath = os.path.realpath(path)
         if realpath not in self.exclude_dirs:
@@ -140,7 +88,7 @@ class NodeSet(object):
                 try:
                     if item.is_dir(follow_symlinks=False):
                         new_node._dirs.append(item.name)
-                        self._get_dir_nodes(item.path)
+                        self._get_dir_nodes(item.path, parent=parent)
                 except (PermissionError, FileNotFoundError) as e:
                     print(str(e))
                 try:
@@ -159,8 +107,6 @@ class NodeSet(object):
                 parent.children.append(new_node)
             self.nodes.append(new_node)
 
-
-
     def _get_link_nodes(self):
         for node in self.nodes:
             for linkname in node.links:
@@ -176,65 +122,6 @@ class NodeSet(object):
                         node.children.append(new_node)
                         new_node.parents.append(node)
                         self.nodes.append(new_node)
-
-    #
-    # @staticmethod
-    # def _get_dir_sets(dir_paths):
-    #     roots = []
-    #     for dir in dir_paths:
-    #         # Try to optimise this
-    #         ldir = [dir] + list(NodeSet._get_dir_contents(dir))
-    #         roots.append(ldir)
-    #     return roots
-
-    # Produce a list of dirs, files and links within a single dir
-
-
-    # def _get_nodes(self):
-    #     for dirpath, dirnames, filenames, linknames in self.dir_sets:
-    #         self.nodes.append(Node(NodeSet.get_id(), 'device', realpath, dirnames, filenames, linknames))
-
-    # Start point for populating nodes
-    # def _get_nodes(self):
-    #     roots = NodeSet._get_dir_sets(NodeSet.root)
-    #     self._get_dev_nodes(roots)
-    #     self._get_link_nodes(roots)
-
-    # # Add those dirs which are devices to self.nodes
-    # def _get_dev_nodes(self, roots):
-    #     for (dirpath, dirnames, filenames, linknames) in roots:
-    #         for filename in filenames:
-    #             if filename == 'path':
-    #                 realpath = os.path.realpath(dirpath)
-    #                 self.nodes.append(Node(NodeSet.get_id(), 'device', realpath, dirnames, filenames, linknames))
-    #                 break
-
-    # Go through all dirs and call traverse_links on list of links in each dir
-    # def _get_link_nodes(self, roots):
-    #     for (dirpath, dirnames, filenames, linknames) in roots:
-    #         realpath = os.path.realpath(dirpath)
-    #         parent_node = self.get_by_fspath(realpath)
-    #         self._traverse_links(dirpath, parent_node, linknames)
-
-    # Go through each link list and create/link nodes targeted by each link
-    # Needs some work to deal with links (firmware?) which target files, not dirs
-    # def _traverse_links(self, dirpath, parent_node, linknames):
-    #         for linkname in linknames:
-    #             realpath = os.path.realpath(os.path.join(dirpath, linkname))
-    #             if realpath not in [node.fspath for node in self.nodes]:
-    #                 subdirs, subfiles, sublinks = self._get_dir_contents(realpath)
-    #                 if 'physical' in linkname or 'firmware' in linkname:
-    #                     self.nodes.append(Node(NodeSet.get_id(), linkname[:8], realpath, subdirs, subfiles, sublinks))
-    #                     if parent_node:
-    #                         parent_node.children.append(self.nodes[-1])
-    #                         self.nodes[-1].parent = parent_node if parent_node else None
-    #                     self._traverse_links(self.nodes[-1].fspath, self.nodes[-1], self.nodes[-1].links.keys())
-    #                 elif linkname in ('driver',):
-    #                     self.nodes.append(Node(NodeSet.get_id(), linkname, realpath, subdirs, subfiles, sublinks))
-    #                     if parent_node:
-    #                         parent_node.children.append(self.nodes[-1])
-    #                         self.nodes[-1].parent = parent_node if parent_node else None
-    #                     self._traverse_links(self.nodes[-1].fspath, self.nodes[-1], self.nodes[-1].links.keys())
 
     def count(self):
         return len(self.nodes)
