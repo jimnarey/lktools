@@ -11,9 +11,9 @@ class Node(object):
         self.fspath = fspath
 
         self.base_path = os.path.basename(self.fspath)
-        self._dirs = []
-        self._files = []
-        self._links = []
+        # self._dirs = []
+        # self._files = []
+        # self._links = []
         self.dirs = {}
         self.files = {}
         self.links = {}
@@ -41,16 +41,25 @@ class Node(object):
         # Sort out paths
         return value.replace('\n', '')
 
-    def _resolve(self):
-        self.dirs = self._resolve_paths(self.dirs)
-        self.files = self._resolve_paths(self.files)
-        self.links = self._resolve_paths(self.links)
+    # def _resolve(self):
+    #     self.dirs = self._resolve_paths(self.dirs)
+    #     self.files = self._resolve_paths(self.files)
+    #     self.links = self._resolve_paths(self.links)
 
-    def _resolve_paths(self, base_names):
-        resolved = {}
-        for base in base_names:
-            resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
-        return resolved
+    def add_dir(self, name):
+        self.dirs[name] = os.path.realpath(os.path.join(self.fspath, name))
+
+    def add_file(self, name):
+        self.files[name] = os.path.realpath(os.path.join(self.fspath, name))
+
+    def add_link(self, name):
+        self.links[name] = os.path.realpath(os.path.join(self.fspath, name))
+
+    # def _resolve_paths(self, base_names):
+    #     resolved = {}
+    #     for base in base_names:
+    #         resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
+    #     return resolved
 
     def all_children(self):
         children = list(self.children)
@@ -85,22 +94,22 @@ class NodeSet(object):
             for item in items:
                 try:
                     if item.is_dir(follow_symlinks=False):
-                        new_node._dirs.append(item.name)
+                        new_node.add_dir(item.name)
                         self._get_dir_nodes(item.path, parent=new_node)
                 except (PermissionError, FileNotFoundError) as e:
                     print(str(e))
                 try:
                     if item.is_file(follow_symlinks=False):
-                        new_node._files.append(item.name)
+                        new_node.add_file(item.name)
                 except (PermissionError, FileNotFoundError) as e:
                     print(str(e))
                 try:
                     if item.is_symlink():
-                        new_node._links.append(item.name)
+                        new_node.add_link(item.name)
                 except (PermissionError, FileNotFoundError) as e:
                     print(str(e))
 
-            new_node._resolve()
+            # new_node._resolve()
             if parent:
                 parent.children.append(new_node)
             self.nodes.append(new_node)
