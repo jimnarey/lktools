@@ -27,8 +27,6 @@ class Node(object):
         for file in self.files:
             self.file_contents[file] = Node._read_file(self.files[file])
 
-
-
     @staticmethod
     def _read_file(file_path):
         try:
@@ -88,7 +86,7 @@ class NodeSet(object):
                 try:
                     if item.is_dir(follow_symlinks=False):
                         new_node._dirs.append(item.name)
-                        self._get_dir_nodes(item.path, parent=parent)
+                        self._get_dir_nodes(item.path, parent=new_node)
                 except (PermissionError, FileNotFoundError) as e:
                     print(str(e))
                 try:
