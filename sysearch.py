@@ -41,11 +41,6 @@ class Node(object):
         # Sort out paths
         return value.replace('\n', '')
 
-    # def _resolve(self):
-    #     self.dirs = self._resolve_paths(self.dirs)
-    #     self.files = self._resolve_paths(self.files)
-    #     self.links = self._resolve_paths(self.links)
-
     def add_dir(self, name):
         self.dirs[name] = os.path.realpath(os.path.join(self.fspath, name))
 
@@ -54,12 +49,6 @@ class Node(object):
 
     def add_link(self, name):
         self.links[name] = os.path.realpath(os.path.join(self.fspath, name))
-
-    # def _resolve_paths(self, base_names):
-    #     resolved = {}
-    #     for base in base_names:
-    #         resolved[base] = os.path.realpath(os.path.join(self.fspath, base))
-    #     return resolved
 
     def all_children(self):
         children = list(self.children)
@@ -83,6 +72,7 @@ class NodeSet(object):
         self.exclude_dirs = exclude_dirs
         self.nodes = []
         self._get_dir_nodes(self.root)
+        self._get_link_nodes()
 
     def _get_dir_nodes(self, path, parent=None):
         realpath = os.path.realpath(path)
@@ -109,7 +99,6 @@ class NodeSet(object):
                 except (PermissionError, FileNotFoundError) as e:
                     print(str(e))
 
-            # new_node._resolve()
             if parent:
                 parent.children.append(new_node)
             self.nodes.append(new_node)
@@ -117,18 +106,30 @@ class NodeSet(object):
     def _get_link_nodes(self):
         for node in self.nodes:
             for linkname in node.links:
-                realpath = os.path.realpath(os.path.join(node.fspath, linkname))
+                realpath = node.links[linkname]
                 if os.path.isdir(realpath):
                     existing_node = next((node for node in self.nodes if node.fspath == realpath), None)
                     if existing_node:
                         node.children.append(existing_node)
                         existing_node.parents.append(node)
                     else:
-                        dirs, files, links = NodeSet._get_dir_contents(realpath)
-                        new_node = Node(NodeSet.get_id(), realpath, dirs, files, links, parent=node)
-                        node.children.append(new_node)
-                        new_node.parents.append(node)
-                        self.nodes.append(new_node)
+                        self._get_dir_nodes(realpath, parent=node)
+
+    # def _get_link_nodes(self):
+    #     for node in self.nodes:
+    #         for linkname in node.links:
+    #             realpath = os.path.realpath(os.path.join(node.fspath, linkname))
+    #             if os.path.isdir(realpath):
+    #                 existing_node = next((node for node in self.nodes if node.fspath == realpath), None)
+    #                 if existing_node:
+    #                     node.children.append(existing_node)
+    #                     existing_node.parents.append(node)
+    #                 else:
+    #                     dirs, files, links = NodeSet._get_dir_contents(realpath)
+    #                     new_node = Node(NodeSet.get_id(), realpath, dirs, files, links, parent=node)
+    #                     node.children.append(new_node)
+    #                     new_node.parents.append(node)
+    #                     self.nodes.append(new_node)
 
     def count(self):
         return len(self.nodes)
