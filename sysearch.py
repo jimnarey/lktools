@@ -2,18 +2,27 @@
 
 import os
 
+# def fs_error_handler(func):
+#
+#     try:
+#         output = func()
+#     except (PermissionError, FileNotFoundError) as e:
+#         print(str(e))
 
 class Node(object):
 
-    def __init__(self, id, fspath, dirs, files, links, ntype=None, parent=None):
-        # print('Node init: ' + ' ' + fspath + ' : ' + str(id))
+    def __init__(self, id, fspath, ntype=None, parent=None):
         self.id = id
         self.type = ntype
         self.fspath = fspath
+
         self.base_path = os.path.basename(self.fspath)
-        self.dirs = self._resolve_paths(dirs)
-        self.files = self._resolve_paths(files)
-        self.links = self._resolve_paths(links)
+        self._dirs = []
+        self._files = []
+        self._links = []
+        self.dirs = {}
+        self.files = {}
+        self.links = {}
         self.file_contents = {}
         self.children = []
         self.parents = []
@@ -23,6 +32,8 @@ class Node(object):
 
         for file in self.files:
             self.file_contents[file] = Node._read_file(self.files[file])
+
+
 
     @staticmethod
     def _read_file(file_path):
@@ -37,6 +48,11 @@ class Node(object):
     def _clean_values(value):
         # Sort out paths
         return value.replace('\n', '')
+
+    def _resolve(self):
+        self.dirs = self._resolve_paths(self.dirs)
+        self.files = self._resolve_paths(self.files)
+        self.links = self._resolve_paths(self.links)
 
     def _resolve_paths(self, base_names):
         resolved = {}
@@ -66,36 +82,86 @@ class NodeSet(object):
 
     def __init__(self, root, exclude_dirs):
         self.root = root
+        self.subdirs = self.get_all_subdirs(self.root)
         self.exclude_dirs = exclude_dirs
-        # self.dir_paths = NodeSet._get_all_dirs(NodeSet.root)
         self.nodes = []
 
         self._get_dir_nodes(self.root)
 
     # Get all dirs/subdir paths within a given path
 
+    @staticmethod
+    def get_all_subdirs(root):
+        return [entry[0] for entry in os.walk(root, followlinks=False)]
+
+    # @staticmethod
+    # def _get_dir_contents(path):
+    #     dirs = []
+    #     files = []
+    #     links = []
+    #     items = tuple(os.scandir(path))
+    #     dirs = [item for item in items if item.is_dir(follow_symlinks=False)]
+    #     files = [item for item in items if item.is_file(follow_symlinks=False)]
+    #     links = [item for item in items if item.is_symlink()]
+    #     try:
+    #         for item in os.scandir(path):
+    #             if item.is_dir(follow_symlinks=False):
+    #                 dirs.append(item.name)
+    #             if item.is_file(follow_symlinks=False):
+    #                 files.append(item.name)
+    #             if item.is_symlink():
+    #                 links.append(item.name)
+    #     except (PermissionError, FileNotFoundError) as e:
+    #         print(str(e))
+    #     return dirs, files, links
+
+    def filter_sub_dirs(self, d):
+        pass
+
+    # @staticmethod
+    # def filter_dir_items(items, method_name):
+    #     subset = []
+    #     for item in items:
+    #         try:
+    #             if getattr(item, method_name)(follow_symlinks=False):
+    #                 subset.append(item.name)
+
+
     # Create some root nodes (make the add_node method again) based on a check (e.g. for a path file, multiple)
     # Pass this all the root paths/nodes in turn
     def _get_dir_nodes(self, path, parent=None):
-        try:
-            for item in os.scandir(path):
-                if item.is_dir(follow_symlinks=False):
+        realpath = os.path.realpath(path)
+        if realpath not in self.exclude_dirs:
 
-                    realpath = os.path.realpath(item.path)
-                    # print(realpath)
-                    if realpath not in [node.fspath for node in self.nodes] and realpath not in self.exclude_dirs:
-                        dirnames, filenames, linknames = NodeSet._get_dir_contents(realpath)
-                        new_node = Node(NodeSet.get_id(), realpath,
-                                               dirnames, filenames, linknames, parent=parent)
-                        if parent:
-                            parent.children.append(new_node)
-                        self.nodes.append(new_node)
-                        self._get_dir_nodes(realpath, parent=new_node)
-        except PermissionError as e:
-            print(str(e))
+            items = tuple(os.scandir(realpath))
+            new_node = Node(NodeSet.get_id(), realpath)
+
+            for item in items:
+                try:
+                    if item.is_dir(follow_symlinks=False):
+                        new_node._dirs.append(item.name)
+                        self._get_dir_nodes(item.path)
+                except (PermissionError, FileNotFoundError) as e:
+                    print(str(e))
+                try:
+                    if item.is_file(follow_symlinks=False):
+                        new_node._files.append(item.name)
+                except (PermissionError, FileNotFoundError) as e:
+                    print(str(e))
+                try:
+                    if item.is_symlink():
+                        new_node._links.append(item.name)
+                except (PermissionError, FileNotFoundError) as e:
+                    print(str(e))
+
+            new_node._resolve()
+            if parent:
+                parent.children.append(new_node)
+            self.nodes.append(new_node)
+
+
 
     def _get_link_nodes(self):
-        # realpaths = [node.fspath for node in self.nodes]
         for node in self.nodes:
             for linkname in node.links:
                 realpath = os.path.realpath(os.path.join(node.fspath, linkname))
@@ -105,9 +171,8 @@ class NodeSet(object):
                         node.children.append(existing_node)
                         existing_node.parents.append(node)
                     else:
-                        dirnames, filenames, linknames = NodeSet._get_dir_contents(realpath)
-                        new_node = Node(NodeSet.get_id(), realpath,
-                                        dirnames, filenames, linknames, parent=node)
+                        dirs, files, links = NodeSet._get_dir_contents(realpath)
+                        new_node = Node(NodeSet.get_id(), realpath, dirs, files, links, parent=node)
                         node.children.append(new_node)
                         new_node.parents.append(node)
                         self.nodes.append(new_node)
@@ -123,22 +188,7 @@ class NodeSet(object):
     #     return roots
 
     # Produce a list of dirs, files and links within a single dir
-    @staticmethod
-    def _get_dir_contents(path):
-        dirs = []
-        files = []
-        links = []
-        try:
-            for item in os.scandir(path):
-                if item.is_dir(follow_symlinks=False):
-                    dirs.append(item.name)
-                if item.is_file(follow_symlinks=False):
-                    files.append(item.name)
-                if item.is_symlink():
-                    links.append(item.name)
-        except (PermissionError, FileNotFoundError) as e:
-            print(str(e))
-        return dirs, files, links
+
 
     # def _get_nodes(self):
     #     for dirpath, dirnames, filenames, linknames in self.dir_sets:
